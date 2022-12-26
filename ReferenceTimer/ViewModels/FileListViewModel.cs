@@ -1,17 +1,17 @@
 ﻿using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
-using System;
+using ReferenceTimer.Logic;
+using ReferenceTimer.Model;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Input;
 
 namespace ReferenceTimer.ViewModels
 {
-    internal class FileListViewModel
+    internal class FileListViewModel : ViewModelBase
     {
+        private readonly IOpenFilesDialogAdapter _openFileDialogAdapter;
+
         [Reactive]
         public IReadOnlyList<IReferenceFileViewModel> ReferenceFiles { get; set; }
 
@@ -19,6 +19,8 @@ namespace ReferenceTimer.ViewModels
 
         public FileListViewModel()
         {
+            _openFileDialogAdapter = new OpenFilesDialogAdapter();
+
             ReferenceFiles = new List<IReferenceFileViewModel>();
 
             LoadReferencesCommand = ReactiveCommand.Create(LoadReferences);
@@ -26,7 +28,14 @@ namespace ReferenceTimer.ViewModels
 
         private void LoadReferences()
         {
+            var referencePaths = _openFileDialogAdapter.OpenFiles();
+            if (referencePaths is null)
+                return;
 
+            ReferenceFiles = referencePaths
+                .Select(path => new Reference(path))
+                .Select(reference => new ReferenceFileViewModel(reference))
+                .ToList();
         }
     }
 }

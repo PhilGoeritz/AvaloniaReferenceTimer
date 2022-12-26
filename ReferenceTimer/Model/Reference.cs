@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,9 +18,9 @@ namespace ReferenceTimer.Model
         public string Title { get; }
         public string Path { get; }
 
-        public Reference(string title, string path)
+        public Reference(string path)
         {
-            Title = title;
+            Title = System.IO.Path.GetFileName(path);
             Path = path;
         }
     }

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ReferenceTimer.Model
 {
-    internal interface IReference
+    public interface IReference
     {
         string Path { get; }
         string Title { get; }

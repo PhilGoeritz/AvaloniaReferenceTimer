@@ -24,7 +24,7 @@ namespace ReferenceTimer
 
         public bool Match(object data)
         {
-            return data is ViewModelBase;
+            return data is IViewModelBase;
         }
     }
 }

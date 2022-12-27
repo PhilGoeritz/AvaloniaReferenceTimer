@@ -1,3 +1,4 @@
+using Autofac;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -15,11 +16,19 @@ namespace ReferenceTimer
 
         public override void OnFrameworkInitializationCompleted()
         {
+            var componentRegristry = new ComponentRegistry();
+
+            var container = componentRegristry
+                .RegisterComponents(new ContainerBuilder())
+                .Build();
+
+            container.BeginLifetimeScope();
+
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 desktop.MainWindow = new MainWindow
                 {
-                    DataContext = new MainWindowViewModel(),
+                    DataContext = container.Resolve<IMainWindowViewModel>(),
                 };
             }
 

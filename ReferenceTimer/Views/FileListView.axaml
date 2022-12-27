@@ -5,14 +5,15 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="ReferenceTimer.Views.FileListView">
 
-    <DockPanel>
+    <Grid RowDefinitions="*, Auto">        
+        <ListBox Grid.Row="0"
+                 Items="{Binding Path=ReferenceFiles}"/>
 
-        <ListBox Items="{Binding Path=ReferenceFiles}"/>
-
-        <Button DockPanel.Dock="Bottom"
-                Command="{Binding Path=LoadReferences}"
-                Content="Open References"/>
+        <StackPanel Grid.Row="1">
+            <Button Command="{Binding Path=LoadReferences}"
+                    Content="Open References"/>    
+        </StackPanel>
         
-    </DockPanel>
-    
+    </Grid>
+
 </UserControl>

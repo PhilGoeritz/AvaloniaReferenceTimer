@@ -5,9 +5,13 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="ReferenceTimer.Views.ReferenceFileView">
 
-    <StackPanel Orientation="Horizontal">
-        <CheckBox IsChecked="{Binding IsSelected}"/>
-        <TextBlock Text="{Binding Title}"/>
+    <StackPanel Orientation="Horizontal"
+                VerticalAlignment="Center">
+        <CheckBox IsChecked="{Binding IsSelected}"
+                  Margin="5"/>
+        <TextBlock Text="{Binding Title}"
+                   VerticalAlignment="Center"
+                   Margin="5"/>
     </StackPanel>
     
 </UserControl>

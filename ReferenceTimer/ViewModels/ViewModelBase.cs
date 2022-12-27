@@ -1,11 +1,12 @@
 using ReactiveUI;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace ReferenceTimer.ViewModels
 {
-    public class ViewModelBase : ReactiveObject
+    public interface IViewModelBase
+        : IReactiveObject, IReactiveNotifyPropertyChanged<IReactiveObject>, IHandleObservableErrors
+    { }
+
+    public class ViewModelBase : ReactiveObject, IViewModelBase
     {
     }
 }

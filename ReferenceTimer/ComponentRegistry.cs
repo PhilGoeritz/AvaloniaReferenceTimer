@@ -1,6 +1,7 @@
 ﻿using Autofac;
 using ReferenceTimer.Model;
 using ReferenceTimer.ViewModels;
+using ReferenceTimer.ViewModels.Files;
 
 namespace ReferenceTimer
 {

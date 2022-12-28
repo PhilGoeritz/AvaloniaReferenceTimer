@@ -11,7 +11,7 @@ using ReactiveUI;
 using ReferenceTimer.Logic;
 using ReferenceTimer.Model;
 
-namespace ReferenceTimer.ViewModels
+namespace ReferenceTimer.ViewModels.Files
 {
     public interface IFileListViewModel : IViewModelBase
     {
@@ -26,7 +26,6 @@ namespace ReferenceTimer.ViewModels
         private readonly IOpenFilesDialogAdapter _openFileDialogAdapter;
         private readonly IReferenceContainer _referenceContainer;
         private readonly Func<string, IReference> _referenceFactory;
-        private readonly Func<IReference, IReferenceFileViewModel> _referenceFileViewModelFactory;
 
         public ReadOnlyObservableCollection<IReferenceFileViewModel> ReferenceFiles { get; }
 
@@ -41,8 +40,6 @@ namespace ReferenceTimer.ViewModels
                 ?? throw new ArgumentNullException(nameof(referenceContainer));
             _referenceFactory = referenceFactory
                 ?? throw new ArgumentNullException(nameof(referenceFactory));
-            _referenceFileViewModelFactory = referenceFileViewModelFactory
-                ?? throw new ArgumentNullException(nameof(referenceFileViewModelFactory));
 
             _openFileDialogAdapter = new OpenFilesDialogAdapter();
 

@@ -1,24 +1,22 @@
 using ReferenceTimer.Model;
+using ReferenceTimer.ViewModels.Files;
 using System;
 
 namespace ReferenceTimer.ViewModels
 {
     public interface IMainWindowViewModel : IViewModelBase
     {
-        IViewModelBase Content { get; }
     }
 
     public class MainWindowViewModel : ViewModelBase, IMainWindowViewModel
     {
-        private readonly IReferenceContainer _referenceContainer;
-
-        public IViewModelBase Content { get; }
+        public IFileListViewModel FileList { get; }
 
         public MainWindowViewModel(
             Func<IReferenceContainer, IFileListViewModel> fileListViewModelFactory)
         {
-            _referenceContainer = new ReferenceContainer();
-            Content = fileListViewModelFactory(_referenceContainer);
+            var referenceContainer = new ReferenceContainer();
+            FileList = fileListViewModelFactory(referenceContainer);
         }
     }
 }

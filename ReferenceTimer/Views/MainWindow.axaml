@@ -7,7 +7,7 @@
         x:Class="ReferenceTimer.Views.MainWindow"
         Icon="/Assets/avalonia-logo.ico"
         Title="ReferenceTimer"
-        Content="{Binding Content}">
+        Content="{Binding FileList}">
 
     <Design.DataContext>
         <vm:MainWindowViewModel/>

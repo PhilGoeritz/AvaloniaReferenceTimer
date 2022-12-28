@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 
-namespace ReferenceTimer.Views
+namespace ReferenceTimer.Views.Files
 {
     public partial class FileListView : UserControl
     {

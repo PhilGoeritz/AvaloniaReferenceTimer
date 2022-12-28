@@ -2,7 +2,7 @@
 using ReactiveUI.Fody.Helpers;
 using ReferenceTimer.Model;
 
-namespace ReferenceTimer.ViewModels
+namespace ReferenceTimer.ViewModels.Files
 {
     public interface IReferenceFileViewModel : IReactiveObject
     {

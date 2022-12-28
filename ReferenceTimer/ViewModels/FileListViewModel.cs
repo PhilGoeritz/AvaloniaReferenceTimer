@@ -1,7 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Windows.Input;
+
+using DynamicData;
 using ReactiveUI;
 using ReferenceTimer.Logic;
 using ReferenceTimer.Model;
@@ -11,15 +16,19 @@ namespace ReferenceTimer.ViewModels
     public interface IFileListViewModel : IViewModelBase
     {
         ICommand LoadReferencesCommand { get; }
-        ObservableCollection<IReferenceFileViewModel> ReferenceFiles { get; }
+        ReadOnlyObservableCollection<IReferenceFileViewModel> ReferenceFiles { get; }
     }
 
     internal class FileListViewModel : ViewModelBase, IFileListViewModel
     {
+        private readonly CompositeDisposable _disposables = new CompositeDisposable();
+
         private readonly IOpenFilesDialogAdapter _openFileDialogAdapter;
         private readonly IReferenceContainer _referenceContainer;
+        private readonly Func<string, IReference> _referenceFactory;
+        private readonly Func<IReference, IReferenceFileViewModel> _referenceFileViewModelFactory;
 
-        public ObservableCollection<IReferenceFileViewModel> ReferenceFiles { get; }
+        public ReadOnlyObservableCollection<IReferenceFileViewModel> ReferenceFiles { get; }
 
         public ICommand LoadReferencesCommand { get; }
 
@@ -30,14 +39,26 @@ namespace ReferenceTimer.ViewModels
         {
             _referenceContainer = referenceContainer
                 ?? throw new ArgumentNullException(nameof(referenceContainer));
+            _referenceFactory = referenceFactory
+                ?? throw new ArgumentNullException(nameof(referenceFactory));
+            _referenceFileViewModelFactory = referenceFileViewModelFactory
+                ?? throw new ArgumentNullException(nameof(referenceFileViewModelFactory));
 
             _openFileDialogAdapter = new OpenFilesDialogAdapter();
 
-            ReferenceFiles = new ObservableCollection<IReferenceFileViewModel>();
+            LoadReferencesCommand = ReactiveCommand
+                .Create(LoadReferences)
+                .DisposeWith(_disposables);
 
-            //_referenceContainer.References.CollectionChanged.Subscribe();
+            _referenceContainer.References
+                .Connect()
+                .Transform(reference => referenceFileViewModelFactory(reference))
+                .Bind(out var referenceFiles)
+                .DisposeMany()
+                .Subscribe()
+                .DisposeWith(_disposables);
 
-            LoadReferencesCommand = ReactiveCommand.Create(LoadReferences);
+            ReferenceFiles = referenceFiles;
         }
 
         private void LoadReferences()
@@ -46,12 +67,19 @@ namespace ReferenceTimer.ViewModels
             if (referencePaths is null)
                 return;
 
-            _referenceContainer.References.Clear();
+            _referenceContainer.References
+                .Edit(innerList => OverwriteReferences(referencePaths, innerList));
+        }
 
-            referencePaths
-                .Select(path => new Reference(path))
-                .ToList()
-                .ForEach(_referenceContainer.References.Add);
+        private void OverwriteReferences(
+            IEnumerable<string> referencePaths,
+            IExtendedList<IReference> referenceList)
+        {
+            var newReferences = referencePaths
+                .Select(path => _referenceFactory(path));
+
+            referenceList.Clear();
+            referenceList.AddRange(newReferences);
         }
     }
 }

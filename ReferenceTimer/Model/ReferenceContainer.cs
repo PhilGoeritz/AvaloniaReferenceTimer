@@ -1,22 +1,26 @@
-﻿using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
-using System.Collections.ObjectModel;
+﻿using System;
+
+using DynamicData;
 
 namespace ReferenceTimer.Model
 {
-    public interface IReferenceContainer
+    public interface IReferenceContainer : IDisposable
     {
-        ObservableCollection<IReference> References { get; set; }
+        ISourceList<IReference> References { get; }
     }
 
-    internal class ReferenceContainer : ReactiveObject, IReferenceContainer
+    internal sealed class ReferenceContainer : IReferenceContainer
     {
-        [Reactive]
-        public ObservableCollection<IReference> References { get; set; }
+        public ISourceList<IReference> References { get; }
 
         public ReferenceContainer()
         {
-            References = new ObservableCollection<IReference>();
+            References = new SourceList<IReference>();
+        }
+
+        public void Dispose()
+        {
+            References.Dispose();
         }
     }
 }

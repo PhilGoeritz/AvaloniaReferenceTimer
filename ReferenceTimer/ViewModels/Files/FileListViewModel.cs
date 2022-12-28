@@ -33,15 +33,16 @@ namespace ReferenceTimer.ViewModels.Files
 
         public FileListViewModel(
             IReferenceContainer referenceContainer,
+            IOpenFilesDialogAdapter openFilesDialogAdapter,
             Func<string, IReference> referenceFactory,
             Func<IReference, IReferenceFileViewModel> referenceFileViewModelFactory)
         {
             _referenceContainer = referenceContainer
                 ?? throw new ArgumentNullException(nameof(referenceContainer));
+            _openFileDialogAdapter = openFilesDialogAdapter
+                ?? throw new ArgumentNullException(nameof(openFilesDialogAdapter));
             _referenceFactory = referenceFactory
                 ?? throw new ArgumentNullException(nameof(referenceFactory));
-
-            _openFileDialogAdapter = new OpenFilesDialogAdapter();
 
             LoadReferencesCommand = ReactiveCommand
                 .Create(LoadReferences)

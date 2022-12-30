@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Reactive.Disposables;
-
+using System.Reactive.Linq;
 using ReactiveUI.Fody.Helpers;
 using ReferenceTimer.Model;
 
@@ -20,12 +20,16 @@ namespace ReferenceTimer.ViewModels.Referencer
         [Reactive]
         public string CurrentImagePath { get; private set; }
 
+        [Reactive]
+        public int SecondCounter { get; private set; }
+
         public ReferencerViewModel(IReferenceContainer referenceContainer)
         {
             _referenceContainer = referenceContainer
                 ?? throw new ArgumentNullException(nameof(referenceContainer));
 
             CurrentImagePath = _referenceContainer.References.Items.FirstOrDefault()?.Path ?? string.Empty;
+            SecondCounter = 0;
 
             _referenceContainer.References
                 .Connect()
@@ -44,6 +48,15 @@ namespace ReferenceTimer.ViewModels.Referencer
                 return;
 
             CurrentImagePath = _referenceContainer.References.Items.FirstOrDefault()?.Path ?? string.Empty;
+        }
+
+        private void TriggerInterval()
+        {
+            SecondCounter = 0;
+
+            Observable.Interval(TimeSpan.FromSeconds(1))
+                .Subscribe(_ => SecondCounter++)
+                .DisposeWith(_disposables);
         }
     }
 }

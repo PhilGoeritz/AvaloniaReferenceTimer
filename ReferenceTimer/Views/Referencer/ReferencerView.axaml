@@ -15,10 +15,13 @@
         <Image Grid.Row="0"
                Source="{Binding Path=CurrentImagePath, Converter={StaticResource pathToBitmapConverter}}"/>
         
-        <StackPanel Grid.Row="1">
+        <StackPanel Grid.Row="1"
+                    HorizontalAlignment="Center"
+                    Orientation="Horizontal">
             <Button Content="Previous"/>
             <Button Content="Play/Pause"/>
             <Button Content="Next"/>
+            <TextBlock Text="{Binding SecondCounter}"/>
         </StackPanel>
         
     </Grid>

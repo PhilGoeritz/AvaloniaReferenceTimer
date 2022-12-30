@@ -2,6 +2,7 @@
 using Avalonia.Media.Imaging;
 using System;
 using System.Globalization;
+using System.IO;
 
 namespace ReferenceTimer.Logic
 {
@@ -18,9 +19,9 @@ namespace ReferenceTimer.Logic
             if (string.IsNullOrEmpty(rawUri))
                 return null;
 
-            var uri = new Uri(rawUri);
+            var uri = new Uri($"file://{rawUri}");
 
-            return new Bitmap(uri.AbsolutePath);
+            return new Bitmap(uri.LocalPath);
         }
 
         public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

@@ -3,6 +3,7 @@ using ReferenceTimer.Logic;
 using ReferenceTimer.Model;
 using ReferenceTimer.ViewModels;
 using ReferenceTimer.ViewModels.Files;
+using ReferenceTimer.ViewModels.Referencer;
 
 namespace ReferenceTimer
 {
@@ -19,6 +20,7 @@ namespace ReferenceTimer
             builder.RegisterType<MainWindowViewModel>().As<IMainWindowViewModel>().InstancePerLifetimeScope();
             builder.RegisterType<FileListViewModel>().As<IFileListViewModel>().InstancePerDependency();
             builder.RegisterType<ReferenceFileViewModel>().As<IReferenceFileViewModel>().InstancePerDependency();
+            builder.RegisterType<ReferencerViewModel>().As<IReferencerViewModel>().InstancePerDependency();
 
             return builder;
         }

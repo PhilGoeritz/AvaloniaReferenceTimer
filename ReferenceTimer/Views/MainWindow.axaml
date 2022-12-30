@@ -6,11 +6,20 @@
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="ReferenceTimer.Views.MainWindow"
         Icon="/Assets/avalonia-logo.ico"
-        Title="ReferenceTimer"
-        Content="{Binding FileList}">
+        Title="ReferenceTimer">
 
     <Design.DataContext>
         <vm:MainWindowViewModel/>
     </Design.DataContext>
+
+    <Grid ColumnDefinitions="auto, *">
+        
+        <ContentControl Grid.Column="0"
+                        Content="{Binding FileList}"/>
+        
+        <ContentControl Grid.Column="1"
+                        Content="{Binding Referencer}"/>
+        
+    </Grid>
 
 </Window>

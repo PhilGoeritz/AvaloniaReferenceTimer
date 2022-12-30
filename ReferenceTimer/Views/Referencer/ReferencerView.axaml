@@ -18,9 +18,11 @@
         <StackPanel Grid.Row="1"
                     HorizontalAlignment="Center"
                     Orientation="Horizontal">
-            <Button Content="Previous"/>
+            <Button Content="Previous"
+                    Command="{Binding PreviousCommand}"/>
             <Button Content="Play/Pause"/>
-            <Button Content="Next"/>
+            <Button Content="Next"
+                    Command="{Binding NextCommand}"/>
             <TextBlock Text="{Binding SecondCounter}"/>
         </StackPanel>
         

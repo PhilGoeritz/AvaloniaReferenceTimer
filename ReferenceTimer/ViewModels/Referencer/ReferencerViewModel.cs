@@ -2,6 +2,8 @@
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using System.Windows.Input;
+using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using ReferenceTimer.Model;
 
@@ -17,11 +19,19 @@ namespace ReferenceTimer.ViewModels.Referencer
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
         private readonly IReferenceContainer _referenceContainer;
 
+        private CompositeDisposable _timerDisposables;
+
         [Reactive]
         public string CurrentImagePath { get; private set; }
 
         [Reactive]
         public int SecondCounter { get; private set; }
+
+        [Reactive]
+        public uint Limit { get; private set; } = 30;
+
+        public ICommand NextCommand { get; }
+        public ICommand PreviousCommand { get; }
 
         public ReferencerViewModel(IReferenceContainer referenceContainer)
         {
@@ -30,6 +40,9 @@ namespace ReferenceTimer.ViewModels.Referencer
 
             CurrentImagePath = _referenceContainer.References.Items.FirstOrDefault()?.Path ?? string.Empty;
             SecondCounter = 0;
+
+            NextCommand = ReactiveCommand.Create(NextReference);
+            PreviousCommand = ReactiveCommand.Create(PreviousReference);
 
             _referenceContainer.References
                 .Connect()
@@ -52,11 +65,70 @@ namespace ReferenceTimer.ViewModels.Referencer
 
         private void TriggerInterval()
         {
+            ResetTimerDisposables();
+
             SecondCounter = 0;
 
             Observable.Interval(TimeSpan.FromSeconds(1))
                 .Subscribe(_ => SecondCounter++)
-                .DisposeWith(_disposables);
+                .DisposeWith(_timerDisposables);
+        }
+
+        private void PauseTimer()
+        {
+            ResetTimerDisposables();
+
+            _timerDisposables.Dispose();
+            _timerDisposables = new CompositeDisposable();
+        }
+
+        private void ResumeTimer()
+        {
+            ResetTimerDisposables();
+
+            Observable.Interval(TimeSpan.FromSeconds(1))
+                .Subscribe(_ => SecondCounter++)
+                .DisposeWith(_timerDisposables);
+        }
+
+        private void ResetTimerDisposables()
+        {
+            _timerDisposables.Dispose();
+            _timerDisposables = new CompositeDisposable();
+        }
+
+        private void PreviousReference()
+        {
+            var referenceList = _referenceContainer.References.Items.ToList();
+
+            var reference = referenceList
+                .FirstOrDefault(item => item.Path.Equals(CurrentImagePath));
+            if (reference is null)
+                return;
+
+            var index = referenceList.IndexOf(reference);
+            int nextIndex = index == 0
+                ? referenceList.Count - 1
+                : index - 1;
+
+            CurrentImagePath = referenceList[nextIndex].Path;
+        }
+
+        private void NextReference()
+        {
+            var referenceList = _referenceContainer.References.Items.ToList();
+
+            var reference = referenceList
+                .FirstOrDefault(item => item.Path.Equals(CurrentImagePath));
+            if (reference is null)
+                return;
+
+            var index = referenceList.IndexOf(reference);
+            int nextIndex = index + 1 == referenceList.Count
+                ? 0
+                : index + 1;
+
+            CurrentImagePath = referenceList[nextIndex].Path;
         }
     }
 }

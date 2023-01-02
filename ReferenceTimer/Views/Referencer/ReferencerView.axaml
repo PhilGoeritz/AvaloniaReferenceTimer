@@ -20,7 +20,10 @@
                     Orientation="Horizontal">
             <Button Content="Previous"
                     Command="{Binding PreviousCommand}"/>
-            <Button Content="Play/Pause"/>
+            <Button Content="Play/Pause"
+                    Command="{Binding PlayPauseTimerCommand}"/>
+            <Button Content="Stop"
+                    Command="{Binding StopTimerCommand}"/>
             <Button Content="Next"
                     Command="{Binding NextCommand}"/>
             <TextBlock Text="{Binding SecondCounter}"/>

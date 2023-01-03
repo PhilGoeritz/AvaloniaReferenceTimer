@@ -13,13 +13,9 @@ using ReferenceTimer.Model;
 
 namespace ReferenceTimer.ViewModels.Files
 {
-    public interface IFileListViewModel : IViewModelBase
-    {
-        ICommand LoadReferencesCommand { get; }
-        ReadOnlyObservableCollection<IReferenceFileViewModel> ReferenceFiles { get; }
-    }
+    public interface IFileListViewModel : IViewModelBase, IDisposable {}
 
-    internal class FileListViewModel : ViewModelBase, IFileListViewModel
+    internal sealed class FileListViewModel : ViewModelBase, IFileListViewModel
     {
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
 
@@ -29,7 +25,8 @@ namespace ReferenceTimer.ViewModels.Files
 
         public ReadOnlyObservableCollection<IReferenceFileViewModel> ReferenceFiles { get; }
 
-        public ICommand LoadReferencesCommand { get; }
+        public ICommand AddReferencesCommand { get; }
+        public ICommand RemoveSelectedReferencesCommand { get; }
 
         public FileListViewModel(
             IReferenceContainer referenceContainer,
@@ -44,8 +41,12 @@ namespace ReferenceTimer.ViewModels.Files
             _referenceFactory = referenceFactory
                 ?? throw new ArgumentNullException(nameof(referenceFactory));
 
-            LoadReferencesCommand = ReactiveCommand
-                .Create(LoadReferences)
+            AddReferencesCommand = ReactiveCommand
+                .Create(AddReferences)
+                .DisposeWith(_disposables);
+
+            RemoveSelectedReferencesCommand = ReactiveCommand
+                .Create(RemoveSelectedReferences)
                 .DisposeWith(_disposables);
 
             _referenceContainer.References
@@ -59,25 +60,38 @@ namespace ReferenceTimer.ViewModels.Files
             ReferenceFiles = referenceFiles;
         }
 
-        private void LoadReferences()
+        public void Dispose()
+        {
+            _disposables.Dispose();
+        }
+
+        private void AddReferences()
         {
             var referencePaths = _openFileDialogAdapter.OpenFiles();
             if (referencePaths is null)
                 return;
 
             _referenceContainer.References
-                .Edit(innerList => OverwriteReferences(referencePaths, innerList));
+                .Edit(innerList => AddReferences(referencePaths, innerList));
         }
 
-        private void OverwriteReferences(
+        private void AddReferences(
             IEnumerable<string> referencePaths,
             IExtendedList<IReference> referenceList)
         {
             var newReferences = referencePaths
                 .Select(path => _referenceFactory(path));
 
-            referenceList.Clear();
             referenceList.AddRange(newReferences);
+        }
+
+        private void RemoveSelectedReferences()
+        {
+            var selectedReferences = ReferenceFiles
+                .Where(reference => reference.IsSelected)
+                .Select(reference => reference.Reference);
+
+            _referenceContainer.References.RemoveMany(selectedReferences);
         }
     }
 }

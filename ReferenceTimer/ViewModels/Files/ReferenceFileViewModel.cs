@@ -8,6 +8,7 @@ namespace ReferenceTimer.ViewModels.Files
     {
         bool IsSelected { get; set; }
         string Title { get; }
+        IReference Reference { get; }
     }
 
     internal class ReferenceFileViewModel : ViewModelBase, IReferenceFileViewModel
@@ -16,10 +17,12 @@ namespace ReferenceTimer.ViewModels.Files
         public bool IsSelected { get; set; }
 
         public string Title { get; }
+        public IReference Reference { get; }
 
         public ReferenceFileViewModel(IReference reference)
         {
             Title = reference.Title;
+            Reference = reference;
         }
     }
 }

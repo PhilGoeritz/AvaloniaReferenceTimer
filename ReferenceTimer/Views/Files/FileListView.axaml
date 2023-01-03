@@ -9,9 +9,11 @@
         <ListBox Grid.Row="0"
                  Items="{Binding Path=ReferenceFiles}"/>
 
-        <StackPanel Grid.Row="1">
-            <Button Command="{Binding Path=LoadReferences}"
-                    Content="Open References"/>    
+        <StackPanel Grid.Row="1" Orientation="Horizontal">
+            <Button Command="{Binding Path=AddReferencesCommand}"
+                    Content="Add References"/>
+            <Button Command="{Binding Path=RemoveSelectedReferencesCommand}"
+                    Content="Remove selected"/>
         </StackPanel>
         
     </Grid>

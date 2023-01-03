@@ -6,28 +6,18 @@ using System.Windows.Input;
 
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
+using ReferenceTimer.Logic;
 using ReferenceTimer.Model;
 
 namespace ReferenceTimer.ViewModels.Referencer
 {
-    public enum TimerState
-    {
-        Stopped,
-        Running,
-        Paused,
-    }
-
-    public interface IReferencerViewModel : IDisposable
-    {
-        string CurrentImagePath { get; }
-    }
+    public interface IReferencerViewModel : IDisposable {}
 
     internal sealed class ReferencerViewModel : ViewModelBase, IReferencerViewModel
     {
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
         private readonly IReferenceContainer _referenceContainer;
-
-        private CompositeDisposable _timerDisposables = new CompositeDisposable();
+        private readonly ITimer _timer;
 
         [Reactive]
         public string CurrentImagePath { get; private set; }
@@ -36,29 +26,40 @@ namespace ReferenceTimer.ViewModels.Referencer
         public int SecondCounter { get; private set; }
 
         [Reactive]
-        public TimerState TimerState { get; private set; } = TimerState.Stopped;
-
-        [Reactive]
-        public int Limit { get; private set; } = 5;
+        public TimerState TimerState { get; private set; }
 
         public ICommand NextCommand { get; }
         public ICommand PreviousCommand { get; }
         public ICommand PlayPauseTimerCommand { get; }
         public ICommand StopTimerCommand { get; }
 
-        public ReferencerViewModel(IReferenceContainer referenceContainer)
+        public ReferencerViewModel(
+            IReferenceContainer referenceContainer,
+            Func<int, ITimer> timerFactory)
         {
             _referenceContainer = referenceContainer
                 ?? throw new ArgumentNullException(nameof(referenceContainer));
+            _timer = timerFactory?.Invoke(5)
+                ?? throw new ArgumentNullException(nameof(timerFactory));
 
             CurrentImagePath = _referenceContainer.References.Items.FirstOrDefault()?.Path ?? string.Empty;
             SecondCounter = 0;
 
-            NextCommand = ReactiveCommand.Create(NextReference);
-            PreviousCommand = ReactiveCommand.Create(PreviousReference);
+            NextCommand = ReactiveCommand.Create(() => ChangeReference(NextIndex));
+            PreviousCommand = ReactiveCommand.Create(() => ChangeReference(PreviousIndex));
 
             PlayPauseTimerCommand = ReactiveCommand.Create(PlayPauseTimer);
-            StopTimerCommand = ReactiveCommand.Create(StopTimer);
+            StopTimerCommand = ReactiveCommand.Create(_timer.StopTimer);
+
+            _timer
+                .WhenAnyValue(x => x.CountDownInMilliseconds)
+                .Subscribe(countDown => SecondCounter = countDown)
+                .DisposeWith(_disposables);
+
+            _timer
+                .WhenAnyValue(x => x.TimerState)
+                .Subscribe(TimerStateChanged)
+                .DisposeWith(_disposables);
 
             _referenceContainer.References
                 .Connect()
@@ -71,85 +72,46 @@ namespace ReferenceTimer.ViewModels.Referencer
             _disposables.Dispose();
         }
 
+        private static int NextIndex(int listLength, int index)
+        {
+            return index + 1 == listLength
+                ? 0
+                : index + 1;
+        }
+
+        private static int PreviousIndex(int listLength, int index)
+        {
+            return index == 0
+                ? listLength - 1
+                : index - 1;
+        }
+
         private void UpdateCurrentImage()
         {
-            if (_referenceContainer.References.Items.Any(reference => reference.Path.Equals(CurrentImagePath)))
+            if (_referenceContainer.References.Items
+                    .Any(reference => reference.Path.Equals(CurrentImagePath)))
                 return;
 
-            CurrentImagePath = _referenceContainer.References.Items.FirstOrDefault()?.Path ?? string.Empty;
+            CurrentImagePath = _referenceContainer.References.Items.FirstOrDefault()?.Path
+                ?? string.Empty;
         }
 
         private void PlayPauseTimer()
         {
             switch (TimerState)
             {
-                case TimerState.Paused:
-                    ResumeTimer();
-                    break;
                 case TimerState.Stopped:
-                    ResetAndRunTimer();
+                case TimerState.Finished:
+                case TimerState.Paused:
+                    _timer.ResumeTimer();
                     break;
                 case TimerState.Running:
-                    PauseTimer();
+                    _timer.PauseTimer();
                     break;
             }
         }
 
-        private void ResetAndRunTimer()
-        {
-            ResetTimerDisposables();
-
-            SecondCounter = Limit;
-            TimerState = TimerState.Running;
-
-            Observable.Interval(TimeSpan.FromSeconds(1))
-                .Subscribe(AdvanceTimer)
-                .DisposeWith(_timerDisposables);
-        }
-
-        private void PauseTimer()
-        {
-            ResetTimerDisposables();
-
-            TimerState = TimerState.Paused;
-        }
-
-        private void ResumeTimer()
-        {
-            ResetTimerDisposables();
-
-            Observable.Interval(TimeSpan.FromSeconds(1))
-                .Subscribe(AdvanceTimer)
-                .DisposeWith(_timerDisposables);
-
-            TimerState = TimerState.Running;
-        }
-
-        private void StopTimer()
-        {
-            ResetTimerDisposables();
-
-            SecondCounter = Limit;
-            TimerState = TimerState.Stopped;
-        }
-
-        private void AdvanceTimer(long _)
-        {
-            SecondCounter--;
-            if (SecondCounter > 0)
-                return;
-
-            SecondCounter = Limit;
-            NextReference();
-        }
-
-        private void ResetTimerDisposables()
-        {
-            _timerDisposables.Dispose();
-            _timerDisposables = new CompositeDisposable();
-        }
-
-        private void PreviousReference()
+        private void ChangeReference(Func<int, int, int> getNextIndex)
         {
             var referenceList = _referenceContainer.References.Items.ToList();
 
@@ -159,30 +121,26 @@ namespace ReferenceTimer.ViewModels.Referencer
                 return;
 
             var index = referenceList.IndexOf(reference);
-            int nextIndex = index == 0
-                ? referenceList.Count - 1
-                : index - 1;
+            int nextIndex = getNextIndex(referenceList.Count, index);
 
             CurrentImagePath = referenceList[nextIndex].Path;
-            SecondCounter = Limit;
+
+            if (TimerState == TimerState.Running)
+            {
+                _timer.StopTimer();
+                _timer.ResumeTimer();
+            }
         }
 
-        private void NextReference()
+        private void TimerStateChanged(TimerState timerState)
         {
-            var referenceList = _referenceContainer.References.Items.ToList();
+            if (_timer.TimerState == TimerState.Finished)
+            {
+                ChangeReference(NextIndex);
+                _timer.ResumeTimer();
+            }
 
-            var reference = referenceList
-                .FirstOrDefault(item => item.Path.Equals(CurrentImagePath));
-            if (reference is null)
-                return;
-
-            var index = referenceList.IndexOf(reference);
-            int nextIndex = index + 1 == referenceList.Count
-                ? 0
-                : index + 1;
-
-            CurrentImagePath = referenceList[nextIndex].Path;
-            SecondCounter = Limit;
+            TimerState = _timer.TimerState;
         }
     }
 }

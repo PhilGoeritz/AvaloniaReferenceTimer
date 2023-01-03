@@ -14,6 +14,7 @@ namespace ReferenceTimer
             builder.RegisterType<OpenFilesDialogAdapter>().As<IOpenFilesDialogAdapter>().SingleInstance();
 
             builder.RegisterType<Timer>().As<ITimer>().InstancePerDependency();
+            builder.RegisterType<ReferenceContainerIterator>().As<IReferenceContainerIterator>().SingleInstance();
 
             // DTO
             builder.RegisterType<Reference>().As<IReference>().InstancePerDependency();

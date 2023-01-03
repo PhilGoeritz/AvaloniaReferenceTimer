@@ -17,6 +17,7 @@ namespace ReferenceTimer.ViewModels.Referencer
     {
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
         private readonly IReferenceContainer _referenceContainer;
+        private readonly IReferenceContainerIterator _referenceContainerIterator;
         private readonly ITimer _timer;
 
         [Reactive]
@@ -35,18 +36,21 @@ namespace ReferenceTimer.ViewModels.Referencer
 
         public ReferencerViewModel(
             IReferenceContainer referenceContainer,
-            Func<int, ITimer> timerFactory)
+            Func<int, ITimer> timerFactory,
+            IReferenceContainerIterator referenceContainerIterator)
         {
             _referenceContainer = referenceContainer
                 ?? throw new ArgumentNullException(nameof(referenceContainer));
             _timer = timerFactory?.Invoke(5)
                 ?? throw new ArgumentNullException(nameof(timerFactory));
+            _referenceContainerIterator = referenceContainerIterator
+                ?? throw new ArgumentNullException(nameof(referenceContainerIterator));
 
             CurrentImagePath = _referenceContainer.References.Items.FirstOrDefault()?.Path ?? string.Empty;
             SecondCounter = 0;
 
-            NextCommand = ReactiveCommand.Create(() => ChangeReference(NextIndex));
-            PreviousCommand = ReactiveCommand.Create(() => ChangeReference(PreviousIndex));
+            NextCommand = ReactiveCommand.Create(NextReference);
+            PreviousCommand = ReactiveCommand.Create(PreviousReference);
 
             PlayPauseTimerCommand = ReactiveCommand.Create(PlayPauseTimer);
             StopTimerCommand = ReactiveCommand.Create(_timer.StopTimer);
@@ -70,20 +74,6 @@ namespace ReferenceTimer.ViewModels.Referencer
         public void Dispose()
         {
             _disposables.Dispose();
-        }
-
-        private static int NextIndex(int listLength, int index)
-        {
-            return index + 1 == listLength
-                ? 0
-                : index + 1;
-        }
-
-        private static int PreviousIndex(int listLength, int index)
-        {
-            return index == 0
-                ? listLength - 1
-                : index - 1;
         }
 
         private void UpdateCurrentImage()
@@ -111,32 +101,37 @@ namespace ReferenceTimer.ViewModels.Referencer
             }
         }
 
-        private void ChangeReference(Func<int, int, int> getNextIndex)
+        private void NextReference()
         {
-            var referenceList = _referenceContainer.References.Items.ToList();
+            CurrentImagePath = _referenceContainerIterator
+                .GetNextPath(_referenceContainer, CurrentImagePath);
 
-            var reference = referenceList
-                .FirstOrDefault(item => item.Path.Equals(CurrentImagePath));
-            if (reference is null)
-                return;
-
-            var index = referenceList.IndexOf(reference);
-            int nextIndex = getNextIndex(referenceList.Count, index);
-
-            CurrentImagePath = referenceList[nextIndex].Path;
-
-            if (TimerState == TimerState.Running)
-            {
-                _timer.StopTimer();
-                _timer.ResumeTimer();
-            }
+            ResetTimer();
         }
 
-        private void TimerStateChanged(TimerState timerState)
+        private void PreviousReference()
+        {
+            CurrentImagePath = _referenceContainerIterator
+                .GetPreviousPath(_referenceContainer, CurrentImagePath);
+
+            ResetTimer();
+        }
+
+        private void ResetTimer()
+        {
+            var timerState = _timer.TimerState;
+
+            _timer.StopTimer();
+
+            if (timerState == TimerState.Running)
+                _timer.ResumeTimer();
+        }
+
+        private void TimerStateChanged(TimerState _)
         {
             if (_timer.TimerState == TimerState.Finished)
             {
-                ChangeReference(NextIndex);
+                NextReference();
                 _timer.ResumeTimer();
             }
 

@@ -24,35 +24,58 @@ namespace ReferenceTimer.ViewModels.Referencer
         public string CurrentImagePath { get; private set; }
 
         [Reactive]
-        public int SecondCounter { get; private set; }
+        public uint SecondCounter { get; private set; }
 
         [Reactive]
         public TimerState TimerState { get; private set; }
+
+        [Reactive]
+        public bool AreSettingsOpen { get; private set; }
+
+        public ISettingsViewModel Settings { get; }
 
         public ICommand NextCommand { get; }
         public ICommand PreviousCommand { get; }
         public ICommand PlayPauseTimerCommand { get; }
         public ICommand StopTimerCommand { get; }
+        public ICommand OpenSettingsCommand { get; }
 
         public ReferencerViewModel(
             IReferenceContainer referenceContainer,
-            Func<int, ITimer> timerFactory,
-            IReferenceContainerIterator referenceContainerIterator)
+            Func<uint, ITimer> timerFactory,
+            IReferenceContainerIterator referenceContainerIterator,
+            ISettingsViewModel settingsViewModel)
         {
             _referenceContainer = referenceContainer
                 ?? throw new ArgumentNullException(nameof(referenceContainer));
-            _timer = timerFactory?.Invoke(5)
+            _timer = timerFactory?.Invoke(30)
                 ?? throw new ArgumentNullException(nameof(timerFactory));
             _referenceContainerIterator = referenceContainerIterator
                 ?? throw new ArgumentNullException(nameof(referenceContainerIterator));
+            Settings = settingsViewModel
+                ?? throw new ArgumentNullException(nameof(settingsViewModel));
 
             CurrentImagePath = _referenceContainer.SelectedReference?.Path ?? string.Empty;
 
             NextCommand = ReactiveCommand.Create(NextReference);
             PreviousCommand = ReactiveCommand.Create(PreviousReference);
 
-            PlayPauseTimerCommand = ReactiveCommand.Create(PlayPauseTimer);
+            PlayPauseTimerCommand = ReactiveCommand.Create(_timer.PlayPauseTimer);
             StopTimerCommand = ReactiveCommand.Create(_timer.StopTimer);
+
+            OpenSettingsCommand = ReactiveCommand.Create(() => AreSettingsOpen = !AreSettingsOpen);
+
+            Settings.LimitInSeconds = 30;
+
+            Settings
+                .WhenAnyValue(x => x.LimitInMinutes)
+                .Subscribe(_ => _timer.LimitInSeconds = Settings.LimitInSeconds + Settings.LimitInMinutes * 60)
+                .DisposeWith(_disposables);
+
+            Settings
+                .WhenAnyValue(x => x.LimitInSeconds)
+                .Subscribe(_ => _timer.LimitInSeconds = Settings.LimitInSeconds + Settings.LimitInMinutes * 60)
+                .DisposeWith(_disposables);
 
             _timer
                 .WhenAnyValue(x => x.CountDownInMilliseconds)
@@ -90,7 +113,7 @@ namespace ReferenceTimer.ViewModels.Referencer
                 ?? _referenceContainer.References.Items.FirstOrDefault()?.Path
                 ?? string.Empty;
 
-            ResetTimer();
+            _timer.ResetTimer();
         }
 
         private void UpdateSelectedReference()
@@ -99,27 +122,12 @@ namespace ReferenceTimer.ViewModels.Referencer
                 .SingleOrDefault(reference => reference.Path.Equals(CurrentImagePath));
         }
 
-        private void PlayPauseTimer()
-        {
-            switch (TimerState)
-            {
-                case TimerState.Stopped:
-                case TimerState.Finished:
-                case TimerState.Paused:
-                    _timer.ResumeTimer();
-                    break;
-                case TimerState.Running:
-                    _timer.PauseTimer();
-                    break;
-            }
-        }
-
         private void NextReference()
         {
             CurrentImagePath = _referenceContainerIterator
                 .GetNextPath(_referenceContainer, CurrentImagePath);
 
-            ResetTimer();
+            _timer.ResetTimer();
         }
 
         private void PreviousReference()
@@ -127,17 +135,7 @@ namespace ReferenceTimer.ViewModels.Referencer
             CurrentImagePath = _referenceContainerIterator
                 .GetPreviousPath(_referenceContainer, CurrentImagePath);
 
-            ResetTimer();
-        }
-
-        private void ResetTimer()
-        {
-            var timerState = _timer.TimerState;
-
-            _timer.StopTimer();
-
-            if (timerState == TimerState.Running)
-                _timer.ResumeTimer();
+            _timer.ResetTimer();
         }
 
         private void TimerStateChanged(TimerState _)

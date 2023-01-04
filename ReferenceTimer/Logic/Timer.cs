@@ -9,13 +9,15 @@ namespace ReferenceTimer.Logic
 {
     public interface ITimer : IDisposable
     {
-        int CountDownInMilliseconds { get; }
-        int LimitInSeconds { get; set; }
+        uint CountDownInMilliseconds { get; }
+        uint LimitInSeconds { get; set; }
         TimerState TimerState { get; }
-        
+
+        void PlayPauseTimer();
         void PauseTimer();
         void ResumeTimer();
         void StopTimer();
+        void ResetTimer();
     }
 
     internal sealed class Timer : ReactiveObject, ITimer
@@ -23,15 +25,15 @@ namespace ReferenceTimer.Logic
         private CompositeDisposable _timerDisposables = new CompositeDisposable();
 
         [Reactive]
-        public int CountDownInMilliseconds { get; private set; }
+        public uint CountDownInMilliseconds { get; private set; }
 
         [Reactive]
-        public int LimitInSeconds { get; set; }
+        public uint LimitInSeconds { get; set; }
 
         [Reactive]
         public TimerState TimerState { get; private set; } = TimerState.Stopped;
 
-        public Timer(int limitInSeconds)
+        public Timer(uint limitInSeconds)
         {
             LimitInSeconds = limitInSeconds;
             CountDownInMilliseconds = LimitInSeconds * 1000;
@@ -40,6 +42,21 @@ namespace ReferenceTimer.Logic
         public void Dispose()
         {
             _timerDisposables.Dispose();
+        }
+
+        public void PlayPauseTimer()
+        {
+            switch (TimerState)
+            {
+                case TimerState.Stopped:
+                case TimerState.Finished:
+                case TimerState.Paused:
+                    ResumeTimer();
+                    break;
+                case TimerState.Running:
+                    PauseTimer();
+                    break;
+            }
         }
 
         public void PauseTimer()
@@ -66,6 +83,16 @@ namespace ReferenceTimer.Logic
 
             CountDownInMilliseconds = LimitInSeconds * 1000;
             TimerState = TimerState.Stopped;
+        }
+
+        public void ResetTimer()
+        {
+            var timerState = TimerState;
+
+            StopTimer();
+
+            if (timerState == TimerState.Running)
+                ResumeTimer();
         }
 
         private void AdvanceTimer(long _)

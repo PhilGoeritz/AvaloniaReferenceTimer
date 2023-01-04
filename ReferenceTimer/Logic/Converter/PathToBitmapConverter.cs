@@ -4,7 +4,7 @@ using System;
 using System.Globalization;
 using System.IO;
 
-namespace ReferenceTimer.Logic
+namespace ReferenceTimer.Logic.Converter
 {
     internal class PathToBitmapConverter : IValueConverter
     {

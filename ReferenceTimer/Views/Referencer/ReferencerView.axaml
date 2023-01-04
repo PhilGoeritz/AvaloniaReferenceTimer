@@ -2,18 +2,25 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:logic="using:ReferenceTimer.Logic"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:logic="using:ReferenceTimer.Logic.Converter"
              x:Class="ReferenceTimer.Views.Referencer.ReferencerView">
 
     <UserControl.Resources>
         <logic:PathToBitmapConverter x:Key="pathToBitmapConverter"/>
+        <logic:BoolInversionConverter x:Key="boolInversionConverter"/>
     </UserControl.Resources>
     
     <Grid RowDefinitions="*, Auto">
         
         <Image Grid.Row="0"
-               Source="{Binding Path=CurrentImagePath, Converter={StaticResource pathToBitmapConverter}}"/>
+               Source="{Binding Path=CurrentImagePath, Converter={StaticResource pathToBitmapConverter}}"
+               IsVisible="{Binding Path=AreSettingsOpen, Converter={StaticResource boolInversionConverter}}"/>
+        
+        <ContentControl Grid.Row="0"
+                        Content="{Binding Settings}"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        IsVisible="{Binding AreSettingsOpen}"/>
         
         <StackPanel Grid.Row="1"
                     HorizontalAlignment="Center"
@@ -24,6 +31,8 @@
                     Command="{Binding PlayPauseTimerCommand}"/>
             <Button Content="Stop"
                     Command="{Binding StopTimerCommand}"/>
+            <Button Content="Settings"
+                    Command="{Binding OpenSettingsCommand}"/>
             <Button Content="Next"
                     Command="{Binding NextCommand}"/>
             <TextBlock Text="{Binding SecondCounter}"/>

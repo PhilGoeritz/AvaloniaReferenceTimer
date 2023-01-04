@@ -24,6 +24,7 @@ namespace ReferenceTimer
             builder.RegisterType<FileListViewModel>().As<IFileListViewModel>().InstancePerDependency();
             builder.RegisterType<ReferenceFileViewModel>().As<IReferenceFileViewModel>().InstancePerDependency();
             builder.RegisterType<ReferencerViewModel>().As<IReferencerViewModel>().InstancePerDependency();
+            builder.RegisterType<SettingsViewModel>().As<ISettingsViewModel>().InstancePerDependency();
 
             return builder;
         }

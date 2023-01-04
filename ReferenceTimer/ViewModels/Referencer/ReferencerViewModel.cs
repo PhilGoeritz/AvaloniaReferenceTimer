@@ -46,8 +46,7 @@ namespace ReferenceTimer.ViewModels.Referencer
             _referenceContainerIterator = referenceContainerIterator
                 ?? throw new ArgumentNullException(nameof(referenceContainerIterator));
 
-            CurrentImagePath = _referenceContainer.References.Items.FirstOrDefault()?.Path ?? string.Empty;
-            SecondCounter = 0;
+            CurrentImagePath = _referenceContainer.SelectedReference?.Path ?? string.Empty;
 
             NextCommand = ReactiveCommand.Create(NextReference);
             PreviousCommand = ReactiveCommand.Create(PreviousReference);
@@ -69,6 +68,15 @@ namespace ReferenceTimer.ViewModels.Referencer
                 .Connect()
                 .Subscribe(_ => UpdateCurrentImage())
                 .DisposeWith(_disposables);
+
+            _referenceContainer
+                .WhenAnyValue(x => x.SelectedReference)
+                .Subscribe(_ => UpdateCurrentImage())
+                .DisposeWith(_disposables);
+
+            this.WhenAnyValue(x => x.CurrentImagePath)
+                .Subscribe(_ => UpdateSelectedReference())
+                .DisposeWith(_disposables);
         }
 
         public void Dispose()
@@ -78,12 +86,17 @@ namespace ReferenceTimer.ViewModels.Referencer
 
         private void UpdateCurrentImage()
         {
-            if (_referenceContainer.References.Items
-                    .Any(reference => reference.Path.Equals(CurrentImagePath)))
-                return;
-
-            CurrentImagePath = _referenceContainer.References.Items.FirstOrDefault()?.Path
+            CurrentImagePath = _referenceContainer.SelectedReference?.Path
+                ?? _referenceContainer.References.Items.FirstOrDefault()?.Path
                 ?? string.Empty;
+
+            ResetTimer();
+        }
+
+        private void UpdateSelectedReference()
+        {
+            _referenceContainer.SelectedReference = _referenceContainer.References.Items
+                .SingleOrDefault(reference => reference.Path.Equals(CurrentImagePath));
         }
 
         private void PlayPauseTimer()

@@ -25,6 +25,19 @@ namespace ReferenceTimer.ViewModels.Files
 
         public ReadOnlyObservableCollection<IReferenceFileViewModel> ReferenceFiles { get; }
 
+        public IReferenceFileViewModel? SelectedReferenceFile
+        {
+            get => GetViewModel(_referenceContainer.SelectedReference);
+            set
+            {
+                _referenceContainer.SelectedReference = value == null
+                    ? null
+                    : value.Reference;
+
+                this.RaisePropertyChanged();
+            }
+        }
+
         public ICommand AddReferencesCommand { get; }
         public ICommand RemoveSelectedReferencesCommand { get; }
 
@@ -55,6 +68,11 @@ namespace ReferenceTimer.ViewModels.Files
                 .Bind(out var referenceFiles)
                 .DisposeMany()
                 .Subscribe()
+                .DisposeWith(_disposables);
+
+            _referenceContainer
+                .WhenAnyValue(container => container.SelectedReference)
+                .Subscribe(_ => this.RaisePropertyChanged(nameof(SelectedReferenceFile)))
                 .DisposeWith(_disposables);
 
             ReferenceFiles = referenceFiles;
@@ -92,6 +110,11 @@ namespace ReferenceTimer.ViewModels.Files
                 .Select(reference => reference.Reference);
 
             _referenceContainer.References.RemoveMany(selectedReferences);
+        }
+
+        private IReferenceFileViewModel? GetViewModel(IReference? selectedReference)
+        {
+            return ReferenceFiles.SingleOrDefault(viewModel => viewModel.Reference == selectedReference);
         }
     }
 }

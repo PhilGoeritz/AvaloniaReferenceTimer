@@ -7,7 +7,8 @@
 
     <Grid RowDefinitions="*, Auto">        
         <ListBox Grid.Row="0"
-                 Items="{Binding Path=ReferenceFiles}"/>
+                 Items="{Binding Path=ReferenceFiles}"
+                 SelectedItem="{Binding Path=SelectedReferenceFile}"/>
 
         <StackPanel Grid.Row="1" Orientation="Horizontal">
             <Button Command="{Binding Path=AddReferencesCommand}"

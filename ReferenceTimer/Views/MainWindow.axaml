@@ -12,10 +12,17 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <Grid ColumnDefinitions="auto, *">
-        
-        <ContentControl Grid.Column="0"
-                        Content="{Binding FileList}"/>
+    <Grid ColumnDefinitions="Auto, *">
+        <Grid Grid.Column="0"
+              RowDefinitions="Auto, *"
+                    Background="#fff2f2f2">
+            <Button Grid.Row="0"
+                    Content="+"
+                    Command="{Binding ExpanderCommand}"/>
+            <ContentControl Grid.Row="1"
+                            Content="{Binding FileList}"
+                            IsVisible="{Binding FilesAreExpanded}"/>    
+        </Grid>
         
         <ContentControl Grid.Column="1"
                         Content="{Binding Referencer}"/>

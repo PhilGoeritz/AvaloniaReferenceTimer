@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using System.Threading;
 using System.Windows.Input;
 
 using ReactiveUI;
@@ -20,17 +21,19 @@ namespace ReferenceTimer.ViewModels.Referencer
         private readonly IReferenceContainerIterator _referenceContainerIterator;
         private readonly ITimer _timer;
 
+        private TimerState _interruptTimerState;
+
         [Reactive]
         public string CurrentImagePath { get; private set; }
 
         [Reactive]
-        public uint SecondCounter { get; private set; }
+        public string SecondCounter { get; private set; }
 
         [Reactive]
         public TimerState TimerState { get; private set; }
 
         [Reactive]
-        public bool AreSettingsOpen { get; private set; }
+        public bool AreSettingsOpen { get; set; }
 
         public ISettingsViewModel Settings { get; }
 
@@ -38,7 +41,6 @@ namespace ReferenceTimer.ViewModels.Referencer
         public ICommand PreviousCommand { get; }
         public ICommand PlayPauseTimerCommand { get; }
         public ICommand StopTimerCommand { get; }
-        public ICommand OpenSettingsCommand { get; }
 
         public ReferencerViewModel(
             IReferenceContainer referenceContainer,
@@ -57,29 +59,31 @@ namespace ReferenceTimer.ViewModels.Referencer
 
             CurrentImagePath = _referenceContainer.SelectedReference?.Path ?? string.Empty;
 
-            NextCommand = ReactiveCommand.Create(NextReference);
-            PreviousCommand = ReactiveCommand.Create(PreviousReference);
+            var anyReferencesAreLoaded = _referenceContainer.References.Connect()
+                .Select(_ => _referenceContainer.References.Items.Any());
+            var timerButtonsAreEnabled = Observable
+                .CombineLatest(
+                    anyReferencesAreLoaded,
+                    this.WhenAnyValue(x => x.AreSettingsOpen),
+                    (refLoaded, settingsOpen) => refLoaded && !settingsOpen);
 
-            PlayPauseTimerCommand = ReactiveCommand.Create(_timer.PlayPauseTimer);
-            StopTimerCommand = ReactiveCommand.Create(_timer.StopTimer);
+            NextCommand = ReactiveCommand.Create(NextReference, timerButtonsAreEnabled);
+            PreviousCommand = ReactiveCommand.Create(PreviousReference, timerButtonsAreEnabled);
 
-            OpenSettingsCommand = ReactiveCommand.Create(() => AreSettingsOpen = !AreSettingsOpen);
+            PlayPauseTimerCommand = ReactiveCommand.Create(_timer.PlayPauseTimer, timerButtonsAreEnabled);
+            StopTimerCommand = ReactiveCommand.Create(_timer.StopTimer, timerButtonsAreEnabled);
 
             Settings.LimitInSeconds = 30;
+            SecondCounter = string.Empty;
 
             Settings
-                .WhenAnyValue(x => x.LimitInMinutes)
-                .Subscribe(_ => _timer.LimitInSeconds = Settings.LimitInSeconds + Settings.LimitInMinutes * 60)
-                .DisposeWith(_disposables);
-
-            Settings
-                .WhenAnyValue(x => x.LimitInSeconds)
+                .WhenAnyValue(x => x.LimitInMinutes, x => x.LimitInSeconds)
                 .Subscribe(_ => _timer.LimitInSeconds = Settings.LimitInSeconds + Settings.LimitInMinutes * 60)
                 .DisposeWith(_disposables);
 
             _timer
                 .WhenAnyValue(x => x.CountDownInMilliseconds)
-                .Subscribe(countDown => SecondCounter = countDown)
+                .Subscribe(countDown => SecondCounter = $"{countDown / 60000}:{countDown % 60000 / 1000},{countDown % 1000 / 100}")
                 .DisposeWith(_disposables);
 
             _timer
@@ -100,6 +104,25 @@ namespace ReferenceTimer.ViewModels.Referencer
             this.WhenAnyValue(x => x.CurrentImagePath)
                 .Subscribe(_ => UpdateSelectedReference())
                 .DisposeWith(_disposables);
+
+            this.WhenAnyValue(x => x.AreSettingsOpen)
+                .Subscribe(_ => InterruptResumeTimer())
+                .DisposeWith(_disposables);
+        }
+
+        private void InterruptResumeTimer()
+        {
+            if (AreSettingsOpen)
+            {
+                _interruptTimerState = _timer.TimerState;
+                if (_interruptTimerState == TimerState.Running)
+                    _timer.PauseTimer();
+
+                return;
+            }
+
+            if (_interruptTimerState == TimerState.Running)
+                _timer.ResumeTimer();
         }
 
         public void Dispose()
@@ -113,7 +136,10 @@ namespace ReferenceTimer.ViewModels.Referencer
                 ?? _referenceContainer.References.Items.FirstOrDefault()?.Path
                 ?? string.Empty;
 
-            _timer.ResetTimer();
+            if (string.IsNullOrEmpty(CurrentImagePath))
+                _timer.StopTimer();
+            else
+                _timer.ResetTimer();
         }
 
         private void UpdateSelectedReference()

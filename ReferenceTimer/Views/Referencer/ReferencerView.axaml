@@ -31,8 +31,8 @@
                     Command="{Binding PlayPauseTimerCommand}"/>
             <Button Content="Stop"
                     Command="{Binding StopTimerCommand}"/>
-            <Button Content="Settings"
-                    Command="{Binding OpenSettingsCommand}"/>
+            <ToggleButton Content="Settings"
+                          IsChecked="{Binding AreSettingsOpen}"/>
             <Button Content="Next"
                     Command="{Binding NextCommand}"/>
             <TextBlock Text="{Binding SecondCounter}"/>

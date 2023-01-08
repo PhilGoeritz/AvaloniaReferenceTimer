@@ -19,10 +19,13 @@
 
         <StackPanel Grid.Column="1"
                     Margin="5"
-                    Orientation="Horizontal">
-            <TextBox Text="{Binding LimitInMinutes}"/>
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center">
+            <NumericUpDown Value="{Binding LimitInMinutes}"
+                           Minimum="0"/>
             <TextBlock Text=":"/>
-            <TextBox Text="{Binding LimitInSeconds}"/>
+            <NumericUpDown Value="{Binding LimitInSeconds}"
+                           Minimum="0"/>
         </StackPanel>
         
         <StackPanel Grid.Column="2"

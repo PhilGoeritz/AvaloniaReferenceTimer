@@ -1,11 +1,14 @@
-﻿using System.Windows.Input;
+﻿using System;
+using System.Reactive.Disposables;
+using System.Reactive.Linq;
+using System.Windows.Input;
 
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
 namespace ReferenceTimer.ViewModels.Referencer
 {
-    public interface ISettingsViewModel
+    public interface ISettingsViewModel : IDisposable
     {
         uint LimitInMinutes { get; set; }
         uint LimitInSeconds { get; set; }
@@ -13,6 +16,8 @@ namespace ReferenceTimer.ViewModels.Referencer
 
     internal sealed class SettingsViewModel : ViewModelBase, ISettingsViewModel
     {
+        private readonly CompositeDisposable _disposables = new CompositeDisposable();
+
         [Reactive]
         public uint LimitInMinutes { get; set; }
 
@@ -29,16 +34,32 @@ namespace ReferenceTimer.ViewModels.Referencer
 
         public SettingsViewModel()
         {
+            var limitObservable = this.WhenAnyValue(x => x.LimitInMinutes, x => x.LimitInSeconds);
+            var canMinus30SecondsObservable = limitObservable
+                .Select(_ => LimitInMinutes * 60 + LimitInSeconds >= 30);
+            var canMinus60SecondsObservable = limitObservable
+                .Select(_ => LimitInMinutes * 60 + LimitInSeconds >= 60);
+            var canMinus300SecondsObservable = limitObservable
+                .Select(_ => LimitInMinutes * 60 + LimitInSeconds >= 300);
+
             Add30SecondsCommand = ReactiveCommand.Create(() => AddSecconds(30));
             Add60SecondsCommand = ReactiveCommand.Create(() => AddSecconds(60));
             Add300SecondsCommand = ReactiveCommand.Create(() => AddSecconds(300));
 
-            Remove30SecondsCommand = ReactiveCommand.Create(() => RemoveSecconds(30));
-            Remove60SecondsCommand = ReactiveCommand.Create(() => RemoveSecconds(60));
-            Remove300SecondsCommand = ReactiveCommand.Create(() => RemoveSecconds(300));
+            Remove30SecondsCommand = ReactiveCommand
+                .Create(() => RemoveSecconds(30), canMinus30SecondsObservable).DisposeWith(_disposables);
+            Remove60SecondsCommand = ReactiveCommand
+                .Create(() => RemoveSecconds(60), canMinus60SecondsObservable).DisposeWith(_disposables);
+            Remove300SecondsCommand = ReactiveCommand
+                .Create(() => RemoveSecconds(300), canMinus300SecondsObservable).DisposeWith(_disposables);
         }
 
-        void AddSecconds(uint seconds)
+        public void Dispose()
+        {
+            _disposables.Dispose();
+        }
+
+        private void AddSecconds(uint seconds)
         {
             var total = LimitInMinutes * 60 + LimitInSeconds;
 
@@ -48,7 +69,7 @@ namespace ReferenceTimer.ViewModels.Referencer
             LimitInSeconds = newTotal % 60;
         }
 
-        void RemoveSecconds(uint seconds)
+        private void RemoveSecconds(uint seconds)
         {
             var total = LimitInMinutes * 60 + LimitInSeconds;
 

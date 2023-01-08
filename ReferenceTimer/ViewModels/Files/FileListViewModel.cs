@@ -5,8 +5,8 @@ using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Windows.Input;
-
 using DynamicData;
+using DynamicData.Binding;
 using ReactiveUI;
 using ReferenceTimer.Logic;
 using ReferenceTimer.Model;
@@ -54,19 +54,10 @@ namespace ReferenceTimer.ViewModels.Files
             _referenceFactory = referenceFactory
                 ?? throw new ArgumentNullException(nameof(referenceFactory));
 
-            AddReferencesCommand = ReactiveCommand
-                .Create(AddReferences)
-                .DisposeWith(_disposables);
-
-            RemoveSelectedReferencesCommand = ReactiveCommand
-                .Create(RemoveSelectedReferences)
-                .DisposeWith(_disposables);
-
             _referenceContainer.References
                 .Connect()
                 .Transform(reference => referenceFileViewModelFactory(reference))
                 .Bind(out var referenceFiles)
-                .DisposeMany()
                 .Subscribe()
                 .DisposeWith(_disposables);
 
@@ -76,6 +67,19 @@ namespace ReferenceTimer.ViewModels.Files
                 .DisposeWith(_disposables);
 
             ReferenceFiles = referenceFiles;
+
+            var areFilesSelectedObservable = ReferenceFiles
+                .ToObservableChangeSet()
+                .AutoRefresh(file => file.IsSelected)
+                .ToCollection()
+                .Select(files => files.Any(file => file.IsSelected));
+
+            AddReferencesCommand = ReactiveCommand
+                .Create(AddReferences);
+
+            RemoveSelectedReferencesCommand = ReactiveCommand
+                .Create(RemoveSelectedReferences, areFilesSelectedObservable)
+                .DisposeWith(_disposables);
         }
 
         public void Dispose()
